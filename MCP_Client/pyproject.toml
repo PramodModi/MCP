@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "mcp-client"
+version = "0.1.0"
+description = ""
+authors = ["Pramod Modi <pramodkmodi@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+langchain-mcp-adapters = "^0.1.9"
+langgraph = "^0.6.5"
+langchain-mistralai = "^0.2.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
