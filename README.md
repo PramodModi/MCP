@@ -1,7 +1,7 @@
 # MCP Server-Agent Examples
 
 This repository contains multiple examples demonstrating the **Model Context Protocol (MCP)** with different architectures and LLM frameworks.
-
+Go to folder [MCP-Server-Agent-Both_Local]
 ## 📋 Table of Contents
 
 - [Overview](#overview)
