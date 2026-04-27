@@ -1,0 +1,134 @@
+# =============================================================================
+# config.yaml  —  Multi-Agent Financial Research System Configuration
+# =============================================================================
+# Single source of truth for all runtime configuration.
+# No values are hardcoded in Python files — everything reads from here.
+#
+# Override any value via environment variable (see each section for details).
+# =============================================================================
+ 
+ 
+# -----------------------------------------------------------------------------
+# LLM Models
+# -----------------------------------------------------------------------------
+# orchestrator and analysis_agent use large — heavy reasoning needed
+# news_agent uses small — summarisation, speed over depth
+# Override: MISTRAL_MODEL_LARGE, MISTRAL_MODEL_SMALL env vars
+# -----------------------------------------------------------------------------
+models:
+  large: "mistral-large-latest"   # orchestrator + analysis agent
+  small: "mistral-small-latest"   # news agent
+  temperature: 0                   # deterministic tool-calling decisions
+ 
+ 
+# -----------------------------------------------------------------------------
+# MCP Servers
+# -----------------------------------------------------------------------------
+# Each server entry:
+#   transport : "http" | "stdio"
+#   url       : for http transport — full MCP endpoint URL
+#   command   : for stdio transport — executable name (resolved via shutil.which)
+#   args      : extra CLI args passed to the stdio process
+#   enabled   : true | false — set false to disable without deleting
+# -----------------------------------------------------------------------------
+mcp_servers:
+ 
+  enhanced-news-server:
+    transport: http
+    url:       "http://127.0.0.1:8001/mcp"
+    enabled:   true
+ 
+  yahoo_finance:
+    transport: stdio
+    command:   "mcp-yahoo-finance"    # pip install mcp-yahoo-finance
+    args:      []
+    enabled:   true
+ 
+  fetch_server:
+    transport: stdio
+    command:   "mcp-server-fetch"     # pip install mcp-server-fetch
+    args:      []
+    enabled:   true
+ 
+ 
+# -----------------------------------------------------------------------------
+# Agent → MCP Server Mapping
+# -----------------------------------------------------------------------------
+# Controls which MCP servers each agent connects to.
+# Only use server keys defined in mcp_servers above.
+# Keeping each agent's tool set small improves tool selection accuracy.
+# -----------------------------------------------------------------------------
+agent_servers:
+ 
+  news_agent:
+    - enhanced-news-server             # 8 tools: headlines, sector, tech, AI, HN, search
+ 
+  analysis_agent:
+    - yahoo_finance           # price, history, fundamentals, options
+    - fetch_server            # full article content fetcher
+    - enhanced-news-server             # company-specific news search
+ 
+ 
+# -----------------------------------------------------------------------------
+# Agent Behaviour
+# -----------------------------------------------------------------------------
+agents:
+ 
+  news_agent:
+    name:            "news_agent"
+    description:     "Fetches and summarises live business, tech, and AI news"
+    recursion_limit: 20        # max LangGraph steps (each tool call = 2 steps)
+    max_tool_calls:  10        # soft cap on tool calls before forcing answer
+ 
+  analysis_agent:
+    name:            "analysis_agent"
+    description:     "Deep financial analysis — BUY/SELL/HOLD, fundamentals, price history"
+    recursion_limit: 40        # deep analyses need more steps
+    max_tool_calls:  15
+ 
+  orchestrator:
+    name:            "orchestrator"
+    recursion_limit: 60        # total steps including all delegations
+    # Query types the orchestrator classifies and routes
+    query_types:
+      TYPE_A: "Market brief, headlines, sector snapshot, general news"
+      TYPE_B: "Buy / Sell / Hold decision for a specific stock"
+      TYPE_C: "Sector selection — which sector or stock to invest in"
+      TYPE_D: "Deep company analysis — full research on one company"
+      TYPE_E: "Macro impact analysis — how an event affects stocks"
+
+
+# -----------------------------------------------------------------------------
+# Output Sections
+# -----------------------------------------------------------------------------
+# Controls which output sections appear in final responses.
+# Set enabled: false to suppress a section globally.
+# -----------------------------------------------------------------------------
+output_sections:
+  recommendation:
+    enabled: true
+    label:   "RECOMMENDATION"
+  market_headlines:
+    enabled: true
+    label:   "MARKET HEADLINES"
+  fundamental_snapshot:
+    enabled: true
+    label:   "FUNDAMENTAL SNAPSHOT"
+  price_analysis:
+    enabled: true
+    label:   "PRICE ANALYSIS"
+  news_catalyst:
+    enabled: true
+    label:   "NEWS & CATALYST ANALYSIS"
+  sector_pulse:
+    enabled: true
+    label:   "SECTOR PULSE"
+  risk_factors:
+    enabled: true
+    label:   "RISK FACTORS"
+  analyst_brief:
+    enabled: true
+    label:   "ANALYST BRIEF"
+  stocks_to_watch:
+    enabled: true
+    label:   "STOCKS TO WATCH"

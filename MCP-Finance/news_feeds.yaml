@@ -1,0 +1,150 @@
+# =============================================================================
+# news_feeds.yaml  —  Feed Registry for news_server.py
+# =============================================================================
+# Edit this file to add, remove, or modify news sources.
+# No Python code changes needed — the server reads this on startup.
+#
+# Feed entry fields:
+#   url      : RSS feed URL (required)
+#   category : "business" | "tech" | "ai"  (required)
+#   region   : "India" | "Global" | "US" | "Asia"  (required)
+#   label    : Human-readable source name shown in results (required)
+#   enabled  : true | false  (optional, default true — set false to disable)
+#
+# To add a new feed: copy any existing entry, change the key and fields.
+# To disable a feed temporarily: add "enabled: false" — no need to delete.
+# =============================================================================
+ 
+ feeds:
+ 
+  # ── Indian Business / Financial ────────────────────────────────────────────
+ 
+  economic_times:
+    url:      "https://economictimes.indiatimes.com/rssfeedsdefault.cms"
+    category: business
+    region:   India
+    label:    "Economic Times"
+ 
+  moneycontrol:
+    url:      "http://www.moneycontrol.com/rss/latestnews.xml"
+    category: business
+    region:   India
+    label:    "Moneycontrol"
+ 
+  financial_express:
+    url:      "https://www.financialexpress.com/feed/"
+    category: business
+    region:   India
+    label:    "Financial Express"
+ 
+  business_line:
+    url:      "https://www.thehindubusinessline.com/feeder/default.rss"
+    category: business
+    region:   India
+    label:    "Business Line"
+
+  livemint:
+    url:      "https://www.livemint.com/rss/news"
+    category: business
+    region:   India
+    label:    "Livemint"
+ 
+  # ── Global Business / Financial ────────────────────────────────────────────
+ 
+  reuters_business:
+    url:      "https://feeds.reuters.com/reuters/businessNews"
+    category: business
+    region:   Global
+    label:    "Reuters Business"
+ 
+  marketwatch:
+    url:      "https://feeds.marketwatch.com/marketwatch/topstories/"
+    category: business
+    region:   US
+    label:    "MarketWatch"
+ 
+  # ── Technology ─────────────────────────────────────────────────────────────
+ 
+  techcrunch:
+    url:      "https://techcrunch.com/feed/"
+    category: tech
+    region:   Global
+    label:    "TechCrunch"
+ 
+  the_verge:
+    url:      "https://www.theverge.com/rss/index.xml"
+    category: tech
+    region:   Global
+    label:    "The Verge"
+ 
+  techmeme:
+    url:      "https://www.techmeme.com/feed.xml"
+    category: tech
+    region:   Global
+    label:    "Techmeme"
+ 
+  wired:
+    url:      "https://www.wired.com/feed/rss"
+    category: tech
+    region:   Global
+    label:    "Wired"
+ 
+  # ── Artificial Intelligence ─────────────────────────────────────────────────
+ 
+  venturebeat_ai:
+    url:      "https://venturebeat.com/category/ai/feed/"
+    category: ai
+    region:   Global
+    label:    "VentureBeat AI"
+ 
+  techcrunch_ai:
+    url:      "https://techcrunch.com/category/artificial-intelligence/feed/"
+    category: ai
+    region:   Global
+    label:    "TechCrunch AI"
+ 
+  mit_tech_review:
+    url:      "https://www.technologyreview.com/feed/"
+    category: ai
+    region:   Global
+    label:    "MIT Technology Review"
+ 
+  the_decoder:
+    url:      "https://the-decoder.com/feed/"
+    category: ai
+    region:   Global
+    label:    "The Decoder"
+ 
+  arxiv_ai:
+    url:      "https://arxiv.org/rss/cs.AI"
+    category: ai
+    region:   Global
+    label:    "arXiv cs.AI"
+
+
+# =============================================================================
+# sector_queries — keywords used by get_sector_news() tool
+# =============================================================================
+# Each sector maps to a Google News RSS search query.
+# Edit the query string to tune what articles come back.
+# Add new sectors here — the tool picks them up automatically.
+# =============================================================================
+ 
+  sector_queries:
+    IT:      "India IT sector technology TCS Infosys Wipro HCL software services"
+    Banking: "India banking sector HDFC SBI ICICI Kotak RBI NPA credit growth"
+    Energy:  "India energy oil gas Reliance ONGC BPCL power sector"
+    Pharma:  "India pharma sector Sun Pharma Cipla Dr Reddy Abbott USFDA"
+    Auto:    "India automobile Tata Motors Maruti Suzuki Bajaj Mahindra EV"
+    FMCG:    "India FMCG consumer HUL ITC Nestle Dabur rural demand"
+    Infra:   "India infrastructure construction L&T Adani Ports roads capex"
+    Telecom: "India telecom Jio Airtel BSNL 5G spectrum AGR"
+
+# =============================================================================
+# server — runtime configuration
+# =============================================================================
+ 
+  server:
+    host: "127.0.0.1"
+    port: 8002
+    name: "enhanced-news-server"
