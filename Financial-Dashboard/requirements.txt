@@ -1,0 +1,41 @@
+# =============================================================================
+# requirements.txt — Financial Dashboard
+# =============================================================================
+# Setup:
+#   python -m venv .venv
+#   source .venv/bin/activate        # macOS/Linux
+#   pip install -r requirements.txt
+# =============================================================================
+
+# Google Workspace MCP server (provides Gmail, Calendar, Drive as MCP tools)
+google-workspace-mcp>=0.1.0
+
+# LangChain MCP adapters — connects MultiServerMCPClient to LangChain tools
+langchain-mcp-adapters>=0.1.0
+
+# LangGraph — orchestration workflow for email sync
+langgraph>=0.2.0
+
+# LLM — LangChain providers (install only what you need based on agent_config.yaml)
+langchain-core>=0.2.0
+langchain-mistralai>=0.1.0          # provider: mistral
+langchain-google-genai>=1.0.0       # provider: gemini
+langchain-openai>=0.1.0             # provider: deepseek (OpenAI-compatible)
+langchain-groq>=0.1.0               # provider: groq
+
+# Data processing
+pandas>=2.2.0
+python-dateutil>=2.9.0
+
+# UI
+streamlit>=1.32.0
+plotly>=5.20.0
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+beautifulsoup4>=4.12.0
+lxml>=5.1.0
+pydantic>=2.6.0
+nest-asyncio>=1.6.0
+google-auth-oauthlib

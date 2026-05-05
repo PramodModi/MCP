@@ -1,0 +1,111 @@
+# =============================================================================
+# agent_config.yaml — Financial Dashboard Configuration
+# =============================================================================
+# Single source of truth for all runtime settings.
+# No values are hardcoded in Python files — everything reads from here.
+#
+# Required env var: set the key for your chosen provider in .env
+#   mistral  → MISTRAL_API_KEY
+#   gemini   → GEMINI_API_KEY
+#   deepseek → DEEPSEEK_API_KEY
+#   groq     → GROK_API_KEY
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# LLM Model
+# -----------------------------------------------------------------------------
+# provider : "mistral" | "gemini" | "deepseek" | "groq"
+#
+# Mistral examples:
+#   model: "mistral-small-latest"    (cheap, fast — good for extraction)
+#   model: "mistral-large-latest"    (better accuracy, higher cost)
+#
+# Gemini example (free tier):
+#   provider: "gemini"
+#   model:    "gemini-2.0-flash"
+#
+# DeepSeek example:
+#   provider: "deepseek"
+#   model:    "deepseek-chat"
+#
+# Groq example (free tier, very fast):
+#   provider: "groq"
+#   model:    "llama-3.1-8b-instant"
+# -----------------------------------------------------------------------------
+models:
+  provider:    "mistral"
+  model:       "mistral-small-latest"
+  temperature: 0                      # deterministic extraction
+
+
+# -----------------------------------------------------------------------------
+# MCP Servers
+# -----------------------------------------------------------------------------
+# Defines all available MCP servers. Each entry specifies transport, command,
+# env overrides, and the tool names the agents use.
+#
+# Tool name discovery:
+#   Run:  python agents/email_sync.py --list-tools
+#   Update mcp_servers.gmail.tools if names differ after a package upgrade.
+# -----------------------------------------------------------------------------
+mcp_servers:
+  gmail:
+    transport: "stdio"
+    command:   "google-workspace-worker"  # installed by: pip install google-workspace-mcp
+    args:      []
+    enabled:   true
+    env:
+      # Static — tells the server to load only Gmail tools
+      GOOGLE_WORKSPACE_ENABLED_CAPABILITIES: '["gmail"]'
+      # GOOGLE_WORKSPACE_CLIENT_ID, GOOGLE_WORKSPACE_CLIENT_SECRET,
+      # and GOOGLE_WORKSPACE_REFRESH_TOKEN are read from .env automatically.
+    tools:
+      search:    "query_gmail_emails"        # search Gmail by query string
+      get_email: "gmail_get_message_details" # fetch a single email by ID
+
+# -----------------------------------------------------------------------------
+# Agent → MCP Server bindings
+# -----------------------------------------------------------------------------
+# Lists which MCP servers each agent connects to.
+# email_sync uses the gmail server only.
+# -----------------------------------------------------------------------------
+agent_servers:
+  email_sync: [gmail]
+
+# Gmail query settings (used by email_sync.py regardless of MCP server used)
+gmail:
+  # Gmail search query used to find financial emails.
+  # Add or remove keywords to tune what emails are fetched.
+  search_query: >-
+    subject:(transaction OR debit OR credit OR payment OR purchase OR spent
+    OR receipt OR invoice OR "amount debited" OR "money sent" OR "Debited"
+    OR "money received" OR "order confirmed" OR "booking confirmed"
+    OR "transfer" OR "UPI" OR "order placed" OR "order shipped"
+    OR "order dispatched" OR "your order" OR "charged" OR "charges"
+    OR "convenience fee" OR "fee charged" OR "service fee"
+    OR "EMI" OR "auto-debit" OR "auto debit"
+    OR "fees acknowledgment" OR "fees acknowledgement"
+    OR "fee acknowledgment" OR "fee acknowledgement")
+
+  max_results_per_sync: 200    # max emails fetched per incremental sync
+  lookback_years: 1             # for first-run / full-refresh: only fetch emails this many years back
+
+
+# -----------------------------------------------------------------------------
+# Transaction Exclusions
+# -----------------------------------------------------------------------------
+# Add merchant names or email subjects to exclude from the dashboard.
+# Useful for filtering out family transfers, salary credits, etc.
+# Matching is case-insensitive, substring match on merchant name.
+# -----------------------------------------------------------------------------
+transaction_exclusions:
+  merchants: ["NEETA DEVI"]      # e.g. ["Mummy", "Papa", "Mom", "Dad"]
+  subjects:  []      # e.g. ["salary credit", "interest credited"]
+
+
+# -----------------------------------------------------------------------------
+# Database
+# -----------------------------------------------------------------------------
+database:
+  path: "financial_dashboard.db"    # SQLite file in project root (gitignored)
