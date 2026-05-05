@@ -198,6 +198,60 @@ def spend_by_bank(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def merchant_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Full merchant breakdown sorted by total spend.
+    Returns columns: merchant, total, count, avg, pct.
+    """
+    if df.empty:
+        return pd.DataFrame(columns=["merchant", "total", "count", "avg", "pct"])
+    grp = (
+        df.groupby("merchant")["amount"]
+        .agg(total="sum", count="count")
+        .reset_index()
+    )
+    grp["avg"] = (grp["total"] / grp["count"]).round(2)
+    grp["pct"] = (grp["total"] / grp["total"].sum() * 100).round(1)
+    return grp.sort_values("total", ascending=False).reset_index(drop=True)
+
+
+def category_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Full category breakdown sorted by total spend.
+    Returns columns: category, total, count, avg, pct.
+    """
+    if df.empty:
+        return pd.DataFrame(columns=["category", "total", "count", "avg", "pct"])
+    grp = (
+        df.groupby("category")["amount"]
+        .agg(total="sum", count="count")
+        .reset_index()
+    )
+    grp["avg"] = (grp["total"] / grp["count"]).round(2)
+    grp["pct"] = (grp["total"] / grp["total"].sum() * 100).round(1)
+    return grp.sort_values("total", ascending=False).reset_index(drop=True)
+
+
+def top_merchants_by_category(df: pd.DataFrame, n: int = 5) -> pd.DataFrame:
+    """
+    Top N merchants within each category, sorted by spend.
+    Returns columns: category, merchant, total, count.
+    """
+    if df.empty:
+        return pd.DataFrame(columns=["category", "merchant", "total", "count"])
+    grp = (
+        df.groupby(["category", "merchant"])["amount"]
+        .agg(total="sum", count="count")
+        .reset_index()
+    )
+    return (
+        grp.sort_values(["category", "total"], ascending=[True, False])
+        .groupby("category")
+        .head(n)
+        .reset_index(drop=True)
+    )
+
+
 def weekly_spend(df: pd.DataFrame) -> pd.DataFrame:
     """
     Weekly total spend (ISO week), sorted ascending.

@@ -13,9 +13,6 @@ google-workspace-mcp>=0.1.0
 # LangChain MCP adapters — connects MultiServerMCPClient to LangChain tools
 langchain-mcp-adapters>=0.1.0
 
-# LangGraph — orchestration workflow for email sync
-langgraph>=0.2.0
-
 # LLM — LangChain providers (install only what you need based on agent_config.yaml)
 langchain-core>=0.2.0
 langchain-mistralai>=0.1.0          # provider: mistral
@@ -37,5 +34,4 @@ pyyaml>=6.0.0
 beautifulsoup4>=4.12.0
 lxml>=5.1.0
 pydantic>=2.6.0
-nest-asyncio>=1.6.0
 google-auth-oauthlib

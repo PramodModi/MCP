@@ -100,7 +100,7 @@ gmail:
 # Matching is case-insensitive, substring match on merchant name.
 # -----------------------------------------------------------------------------
 transaction_exclusions:
-  merchants: ["NEETA DEVI"]      # e.g. ["Mummy", "Papa", "Mom", "Dad"]
+  merchants: ["NEETA DEVI", "UTIGOLDETF"]      # e.g. ["Mummy", "Papa", "Mom", "Dad"]
   subjects:  []      # e.g. ["salary credit", "interest credited"]
 
 

@@ -6,18 +6,11 @@ Interactive dashboard for visualising Gmail-sourced financial expenditure.
 Run:
   streamlit run ui/dashboard.py
 
-Features:
-  - Period selector: This Month / Last Month / Last 2 Months / Last Quarter /
-                     Last 6 Months / YTD / Custom Range
-  - Category & Bank multi-select filters
-  - KPI cards: Total Spent, # Transactions, Avg Transaction, Largest Transaction
-  - Daily spend area chart
-  - Category donut chart
-  - Top merchants horizontal bar chart
-  - Month-over-month bar chart
-  - Bank / app spend bar chart
-  - Full transaction table (sortable)
-  - Incremental Sync + Full Refresh buttons with live progress
+Tabs:
+  Overview     — KPIs, daily trend, category donut, MoM, bank bar
+  Merchants    — Configurable top-N bar + full merchant summary table
+  Categories   — Category summary table + per-category merchant drilldown
+  Transactions — Full filterable transaction table (search, category, type, amount)
 """
 
 import asyncio
@@ -33,13 +26,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from data.metrics import (
     PERIOD_LABELS,
+    category_summary,
     compute_kpis,
     daily_spend,
     get_period_dates,
+    merchant_summary,
     monthly_comparison,
     spend_by_bank,
     spend_by_category,
     top_merchants,
+    top_merchants_by_category,
 )
 from data.storage import (
     get_all_banks,
@@ -233,7 +229,7 @@ if df.empty:
 
 
 # =============================================================================
-# KPI Cards
+# KPI Cards  (always visible above tabs)
 # =============================================================================
 
 kpis = compute_kpis(df)
@@ -248,7 +244,6 @@ with c1:
         f'</div>',
         unsafe_allow_html=True,
     )
-
 with c2:
     st.markdown(
         f'<div class="kpi-card">'
@@ -257,7 +252,6 @@ with c2:
         f'</div>',
         unsafe_allow_html=True,
     )
-
 with c3:
     st.markdown(
         f'<div class="kpi-card">'
@@ -266,7 +260,6 @@ with c3:
         f'</div>',
         unsafe_allow_html=True,
     )
-
 with c4:
     st.markdown(
         f'<div class="kpi-card">'
@@ -281,84 +274,96 @@ st.markdown("---")
 
 
 # =============================================================================
-# Row 1 — Daily Trend  +  Category Donut
+# Tabs
 # =============================================================================
 
-row1_left, row1_right = st.columns([3, 2], gap="large")
-
-with row1_left:
-    st.subheader("📈 Daily Spend Trend")
-    daily_df = daily_spend(df)
-    if not daily_df.empty:
-        fig = px.area(
-            daily_df, x="date", y="amount",
-            labels         = {"amount": "Amount (₹)", "date": ""},
-            color_discrete_sequence = ["#cba6f7"],
-        )
-        fig.update_traces(fillcolor="rgba(203,166,247,0.15)", line_width=2)
-        fig.update_layout(
-            **_PLOT_LAYOUT,
-            xaxis = dict(showgrid=False, tickfont_size=11),
-            yaxis = dict(gridcolor=_GRID_COLOR, tickfont_size=11, tickprefix="₹"),
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-with row1_right:
-    st.subheader("🏷️ By Category")
-    cat_df = spend_by_category(df)
-    if not cat_df.empty:
-        fig = px.pie(
-            cat_df,
-            values = "amount",
-            names  = "category",
-            hole   = 0.48,
-            color_discrete_sequence = px.colors.qualitative.Pastel,
-        )
-        fig.update_traces(textposition="inside", textinfo="percent+label")
-        fig.update_layout(
-            **_PLOT_LAYOUT,
-            showlegend = False,
-        )
-        st.plotly_chart(fig, use_container_width=True)
+tab_overview, tab_merchants, tab_categories, tab_txns = st.tabs(
+    ["📈 Overview", "🏪 Merchants", "🏷️ Categories", "📋 Transactions"]
+)
 
 
-# =============================================================================
-# Row 2 — Top Merchants  +  Month-over-Month
-# =============================================================================
+# ---------------------------------------------------------------------------
+# Tab 1 — Overview
+# ---------------------------------------------------------------------------
 
-row2_left, row2_right = st.columns([2, 3], gap="large")
+with tab_overview:
 
-with row2_left:
-    st.subheader("🏪 Top Merchants")
-    merch_df = top_merchants(df, n=10)
-    if not merch_df.empty:
+    row1_left, row1_right = st.columns([3, 2], gap="large")
+
+    with row1_left:
+        st.subheader("📈 Daily Spend Trend")
+        daily_df = daily_spend(df)
+        if not daily_df.empty:
+            fig = px.area(
+                daily_df, x="date", y="amount",
+                labels                  = {"amount": "Amount (₹)", "date": ""},
+                color_discrete_sequence = ["#cba6f7"],
+            )
+            fig.update_traces(fillcolor="rgba(203,166,247,0.15)", line_width=2)
+            fig.update_layout(
+                **_PLOT_LAYOUT,
+                xaxis = dict(showgrid=False, tickfont_size=11),
+                yaxis = dict(gridcolor=_GRID_COLOR, tickfont_size=11, tickprefix="₹"),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    with row1_right:
+        st.subheader("🏷️ By Category")
+        cat_df = spend_by_category(df)
+        if not cat_df.empty:
+            fig = px.pie(
+                cat_df, values="amount", names="category",
+                hole                    = 0.48,
+                color_discrete_sequence = px.colors.qualitative.Pastel,
+            )
+            fig.update_traces(textposition="inside", textinfo="percent+label")
+            fig.update_layout(**_PLOT_LAYOUT, showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
+
+    row2_left, row2_right = st.columns([2, 3], gap="large")
+
+    with row2_left:
+        st.subheader("🏪 Top 10 Merchants")
+        merch_df = top_merchants(df, n=10)
+        if not merch_df.empty:
+            fig = px.bar(
+                merch_df, x="amount", y="merchant", orientation="h",
+                labels                  = {"amount": "Amount (₹)", "merchant": ""},
+                color_discrete_sequence = ["#89b4fa"],
+                text_auto               = ".2s",
+            )
+            fig.update_layout(
+                **_PLOT_LAYOUT,
+                yaxis = dict(autorange="reversed", showgrid=False, tickfont_size=11),
+                xaxis = dict(gridcolor=_GRID_COLOR, tickprefix="₹"),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    with row2_right:
+        st.subheader("📊 Month-over-Month")
+        monthly_df = monthly_comparison(df)
+        if not monthly_df.empty:
+            fig = px.bar(
+                monthly_df, x="month", y="amount",
+                labels                  = {"amount": "Amount (₹)", "month": ""},
+                color_discrete_sequence = ["#a6e3a1"],
+                text_auto               = ".2s",
+            )
+            fig.update_layout(
+                **_PLOT_LAYOUT,
+                xaxis = dict(showgrid=False, tickfont_size=11),
+                yaxis = dict(gridcolor=_GRID_COLOR, tickprefix="₹"),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    bank_df = spend_by_bank(df)
+    if len(bank_df) > 1:
+        st.subheader("🏦 Spend by Bank / App")
         fig = px.bar(
-            merch_df,
-            x           = "amount",
-            y           = "merchant",
-            orientation = "h",
-            labels      = {"amount": "Amount (₹)", "merchant": ""},
-            color_discrete_sequence = ["#89b4fa"],
-            text_auto   = ".2s",
-        )
-        fig.update_layout(
-            **_PLOT_LAYOUT,
-            yaxis = dict(autorange="reversed", showgrid=False, tickfont_size=11),
-            xaxis = dict(gridcolor=_GRID_COLOR, tickprefix="₹"),
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-with row2_right:
-    st.subheader("📊 Month-over-Month")
-    monthly_df = monthly_comparison(df)
-    if not monthly_df.empty:
-        fig = px.bar(
-            monthly_df,
-            x         = "month",
-            y         = "amount",
-            labels    = {"amount": "Amount (₹)", "month": ""},
-            color_discrete_sequence = ["#a6e3a1"],
-            text_auto = ".2s",
+            bank_df, x="bank_or_source", y="amount",
+            labels                  = {"amount": "Amount (₹)", "bank_or_source": ""},
+            color_discrete_sequence = ["#fab387"],
+            text_auto               = ".2s",
         )
         fig.update_layout(
             **_PLOT_LAYOUT,
@@ -368,53 +373,187 @@ with row2_right:
         st.plotly_chart(fig, use_container_width=True)
 
 
-# =============================================================================
-# Row 3 — Spend by Bank / App  (only when multiple banks present)
-# =============================================================================
+# ---------------------------------------------------------------------------
+# Tab 2 — Merchant Analysis
+# ---------------------------------------------------------------------------
 
-bank_df = spend_by_bank(df)
-if len(bank_df) > 1:
-    st.subheader("🏦 Spend by Bank / App")
-    fig = px.bar(
-        bank_df,
-        x         = "bank_or_source",
-        y         = "amount",
-        labels    = {"amount": "Amount (₹)", "bank_or_source": ""},
-        color_discrete_sequence = ["#fab387"],
-        text_auto = ".2s",
+with tab_merchants:
+
+    top_n = st.slider("Top N merchants to show in chart", min_value=5, max_value=50, value=15, step=5)
+
+    merch_sum = merchant_summary(df)
+
+    st.subheader(f"🏪 Top {top_n} Merchants by Spend")
+    chart_df = merch_sum.head(top_n).rename(columns={"total": "amount"})
+    if not chart_df.empty:
+        fig = px.bar(
+            chart_df, x="amount", y="merchant", orientation="h",
+            labels                  = {"amount": "Total Spend (₹)", "merchant": ""},
+            color                   = "amount",
+            color_continuous_scale  = "Blues",
+            text_auto               = ".2s",
+        )
+        fig.update_layout(
+            **_PLOT_LAYOUT,
+            yaxis              = dict(autorange="reversed", showgrid=False, tickfont_size=11),
+            xaxis              = dict(gridcolor=_GRID_COLOR, tickprefix="₹"),
+            coloraxis_showscale = False,
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.subheader("📊 Full Merchant Summary")
+    disp = merch_sum.copy()
+    disp.index = range(1, len(disp) + 1)
+    disp.index.name = "#"
+    disp.columns = ["Merchant", "Total (₹)", "Transactions", "Avg (₹)", "% of Spend"]
+    disp["Total (₹)"] = disp["Total (₹)"].apply(lambda x: f"₹{x:,.2f}")
+    disp["Avg (₹)"]   = disp["Avg (₹)"].apply(lambda x: f"₹{x:,.2f}")
+    disp["% of Spend"] = disp["% of Spend"].apply(lambda x: f"{x:.1f}%")
+    st.dataframe(disp, use_container_width=True)
+    st.caption(f"{len(merch_sum)} unique merchants")
+
+
+# ---------------------------------------------------------------------------
+# Tab 3 — Category Analysis
+# ---------------------------------------------------------------------------
+
+with tab_categories:
+
+    cat_sum = category_summary(df)
+
+    left_col, right_col = st.columns([2, 3], gap="large")
+
+    with left_col:
+        st.subheader("🏷️ Category Summary")
+        disp = cat_sum.copy()
+        disp.index = range(1, len(disp) + 1)
+        disp.index.name = "#"
+        disp.columns = ["Category", "Total (₹)", "Transactions", "Avg (₹)", "% of Spend"]
+        disp["Total (₹)"] = disp["Total (₹)"].apply(lambda x: f"₹{x:,.2f}")
+        disp["Avg (₹)"]   = disp["Avg (₹)"].apply(lambda x: f"₹{x:,.2f}")
+        disp["% of Spend"] = disp["% of Spend"].apply(lambda x: f"{x:.1f}%")
+        st.dataframe(disp, use_container_width=True, hide_index=False)
+
+    with right_col:
+        st.subheader("�️ Spend by Category")
+        if not cat_sum.empty:
+            fig = px.bar(
+                cat_sum, x="total", y="category", orientation="h",
+                labels                  = {"total": "Total Spend (₹)", "category": ""},
+                color                   = "total",
+                color_continuous_scale  = "Purples",
+                text_auto               = ".2s",
+            )
+            fig.update_layout(
+                **_PLOT_LAYOUT,
+                yaxis              = dict(autorange="reversed", showgrid=False, tickfont_size=11),
+                xaxis              = dict(gridcolor=_GRID_COLOR, tickprefix="₹"),
+                coloraxis_showscale = False,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    st.subheader("🔍 Top Merchants per Category")
+    cats_available = sorted(df["category"].dropna().unique().tolist())
+    selected_cat   = st.selectbox("Select category to drill down", ["— All —"] + cats_available)
+
+    if selected_cat == "— All —":
+        drill_df = top_merchants_by_category(df, n=5)
+        for cat, grp in drill_df.groupby("category"):
+            with st.expander(f"**{cat}**  ·  {len(grp)} merchants shown"):
+                g = grp[["merchant", "total", "count"]].copy()
+                g.columns = ["Merchant", "Total (₹)", "Transactions"]
+                g["Total (₹)"] = g["Total (₹)"].apply(lambda x: f"₹{x:,.2f}")
+                st.dataframe(g, use_container_width=True, hide_index=True)
+    else:
+        filtered = df[df["category"] == selected_cat]
+        cat_merch = merchant_summary(filtered)
+        if not cat_merch.empty:
+            disp2 = cat_merch[["merchant", "total", "count", "avg", "pct"]].copy()
+            disp2.columns = ["Merchant", "Total (₹)", "Transactions", "Avg (₹)", "% in Category"]
+            disp2["Total (₹)"] = disp2["Total (₹)"].apply(lambda x: f"₹{x:,.2f}")
+            disp2["Avg (₹)"]   = disp2["Avg (₹)"].apply(lambda x: f"₹{x:,.2f}")
+            disp2["% in Category"] = disp2["% in Category"].apply(lambda x: f"{x:.1f}%")
+            disp2.index = range(1, len(disp2) + 1)
+            st.dataframe(disp2, use_container_width=True)
+
+            fig = px.bar(
+                cat_merch.head(15), x="total", y="merchant", orientation="h",
+                labels                  = {"total": "Total Spend (₹)", "merchant": ""},
+                color_discrete_sequence = ["#89dceb"],
+                text_auto               = ".2s",
+            )
+            fig.update_layout(
+                **_PLOT_LAYOUT,
+                yaxis = dict(autorange="reversed", showgrid=False, tickfont_size=11),
+                xaxis = dict(gridcolor=_GRID_COLOR, tickprefix="₹"),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+
+# ---------------------------------------------------------------------------
+# Tab 4 — Transactions  (with inline filters)
+# ---------------------------------------------------------------------------
+
+with tab_txns:
+
+    st.subheader("📋 All Transactions")
+
+    # ---- Inline filter row ----
+    f1, f2, f3, f4 = st.columns([2, 1, 1, 1])
+
+    with f1:
+        search_text = st.text_input("🔍 Search merchant", placeholder="e.g. Swiggy, Amazon…")
+    with f2:
+        all_cats_txn   = sorted(df["category"].dropna().unique().tolist())
+        filter_cats    = st.multiselect("Category", all_cats_txn, placeholder="All")
+    with f3:
+        all_types      = sorted(df["transaction_type"].dropna().unique().tolist())
+        filter_types   = st.multiselect("Type", all_types, placeholder="All")
+    with f4:
+        min_amt = float(df["amount"].min())
+        max_amt = float(df["amount"].max())
+        if max_amt > min_amt:
+            amt_range = st.slider(
+                "Amount (₹)", min_value=min_amt, max_value=max_amt,
+                value=(min_amt, max_amt), step=1.0,
+            )
+        else:
+            amt_range = (min_amt, max_amt)
+
+    # ---- Apply filters ----
+    filtered_df = df.copy()
+    if search_text:
+        filtered_df = filtered_df[
+            filtered_df["merchant"].str.contains(search_text, case=False, na=False)
+        ]
+    if filter_cats:
+        filtered_df = filtered_df[filtered_df["category"].isin(filter_cats)]
+    if filter_types:
+        filtered_df = filtered_df[filtered_df["transaction_type"].isin(filter_types)]
+    filtered_df = filtered_df[
+        (filtered_df["amount"] >= amt_range[0]) & (filtered_df["amount"] <= amt_range[1])
+    ]
+
+    # ---- Display ----
+    display_cols = ["date", "merchant", "category", "amount", "bank_or_source", "transaction_type"]
+    display_df   = filtered_df[display_cols].copy()
+    display_df.columns = ["Date", "Merchant", "Category", "Amount (₹)", "Bank / App", "Type"]
+    display_df["Amount (₹)"] = display_df["Amount (₹)"].apply(lambda x: f"₹{x:,.2f}")
+    display_df = display_df.sort_values("Date", ascending=False)
+
+    st.dataframe(
+        display_df,
+        use_container_width = True,
+        hide_index          = True,
+        column_config = {
+            "Date":       st.column_config.TextColumn("Date",       width="small"),
+            "Merchant":   st.column_config.TextColumn("Merchant"),
+            "Category":   st.column_config.TextColumn("Category",   width="small"),
+            "Amount (₹)": st.column_config.TextColumn("Amount (₹)", width="small"),
+            "Bank / App": st.column_config.TextColumn("Bank / App"),
+            "Type":       st.column_config.TextColumn("Type",       width="small"),
+        },
     )
-    fig.update_layout(
-        **_PLOT_LAYOUT,
-        xaxis = dict(showgrid=False, tickfont_size=11),
-        yaxis = dict(gridcolor=_GRID_COLOR, tickprefix="₹"),
+    st.caption(
+        f"Showing **{len(display_df)}** of {len(df)} transactions · amounts in INR"
     )
-    st.plotly_chart(fig, use_container_width=True)
-
-
-# =============================================================================
-# Transaction Table
-# =============================================================================
-
-st.subheader("📋 All Transactions")
-
-display_cols = ["date", "merchant", "category", "amount", "bank_or_source", "transaction_type"]
-display_df   = df[display_cols].copy()
-display_df.columns = ["Date", "Merchant", "Category", "Amount (₹)", "Bank / App", "Type"]
-display_df["Amount (₹)"] = display_df["Amount (₹)"].apply(lambda x: f"₹{x:,.2f}")
-display_df = display_df.sort_values("Date", ascending=False)
-
-st.dataframe(
-    display_df,
-    use_container_width = True,
-    hide_index          = True,
-    column_config       = {
-        "Date":       st.column_config.TextColumn("Date",       width="small"),
-        "Merchant":   st.column_config.TextColumn("Merchant"),
-        "Category":   st.column_config.TextColumn("Category",   width="small"),
-        "Amount (₹)": st.column_config.TextColumn("Amount (₹)", width="small"),
-        "Bank / App": st.column_config.TextColumn("Bank / App"),
-        "Type":       st.column_config.TextColumn("Type",       width="small"),
-    },
-)
-
-st.caption(f"Showing {len(display_df)} transactions · amounts in INR")
